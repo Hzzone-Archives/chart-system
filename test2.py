@@ -11,6 +11,7 @@ from PyQt5.QtWidgets import QApplication, QMainWindow, QVBoxLayout, QWidget, QPu
 from numpy import arange, sin, pi
 from matplotlib.backends.backend_qt5agg import FigureCanvasQTAgg as FigureCanvas
 from matplotlib.figure import Figure
+import utils
 
 
 class Canvas(FigureCanvas):
@@ -19,8 +20,10 @@ class Canvas(FigureCanvas):
         self.figure = Figure()
         super(Canvas, self).__init__(self.figure)
 
-        ax = self.figure.add_subplot(1,1,1)
-        ax.plot([1,2,3])
+        ax = self.figure.add_subplot(1, 1, 1)
+        data = utils.read_file("/Users/HZzone/Desktop/test.py")
+        # self.figure.set_size_inches(18.5, 10.5, forward=True)
+        ax.plot(range(0, len(data)), data, linewidth=2.0)
         self.draw()
 
     def add_subplot(self, data=[]):
@@ -41,10 +44,15 @@ class Main(QWidget):
         self.canvas = QScrollArea(self)
         self.canvas.setWidget(Canvas(self))
         self.canvas.setWidgetResizable(False)
+        # print(self.size())
+        # print(dir(self.size()))
+        # new_size = QtCore.QSize(200, self.canvas.size().height())
+        # self.setBaseSize((200, self.canvas.size()))
+        # self.setBaseSize(new_size)
 
-        for x in range(1):
-            self.canvas.widget().add_subplot()
-            self.canvas.widget().adjustSize()
+        # for x in range(1):
+        #     self.canvas.widget().add_subplot()
+        #     self.canvas.widget().adjustSize()
 
 
         layout = QVBoxLayout(self)
