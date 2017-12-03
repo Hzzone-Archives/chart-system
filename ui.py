@@ -7,6 +7,8 @@ import utils
 
 
 class ApplicationWindow(QMainWindow):
+	open_file_signal = pyqtSignal()
+
 	def __init__(self, parent=None):
 		super(ApplicationWindow, self).__init__(parent)
 
@@ -80,9 +82,32 @@ class ApplicationWindow(QMainWindow):
 
 	def open_file(self):
 		print("open file")
+		fileName, filetype = QFileDialog.getOpenFileName(self,
+		                                                  "选取文件",
+		                                                  "C:/",
+		                                                  "All Files (*);;Text Files (*.txt)")
+		print(fileName, filetype)
+		self.canvas.data = utils.read_file(fileName)
+		self.open_file_signal.connect(self.canvas.update_canvas)
+		self.open_file_signal.emit()
+
 
 	def save_image(self):
 		print("save_image")
+		formats = QImageWriter.supportedImageFormats()
+		formats = map(lambda suffix: u"*." + suffix.decode(), formats)
+		path = QFileDialog.getSaveFileName(self, self.tr("Save Image"),
+		                                           "", self.tr("Image files (%1)"))
+		print(path)
+		# if path:
+		# 	im = QPixmap.grabWidget(self.canvas)
+		# 	im.save(path)
+		im = self.canvas.grab()
+		# print(im.size())
+		# print(type(im))
+		# print(im.size()/2)
+		im = im.scaled(im.size()/10)
+		im.save(path[0])
 
 
 class Canvas(QWidget):
