@@ -61,6 +61,31 @@ class ApplicationWindow(QMainWindow):
 	def differential(self):
 		print("differential options")
 
+
+class Canvas(QWidget):
+	def __init__(self, parent=None):
+		super(Canvas, self).__init__(parent)
+		self.resize(2000, 200)
+		self.mainlayout = QGridLayout(self)
+
+	def paintEvent(self, e):########画图事件，每次update都会进入，想画啥根据注释进行,双击重画
+		qp = QPainter()
+		qp.begin(self)
+
+		self.drawLines(qp)######画线
+		self.drawPoints(qp)  ###画点
+		qp.end()
+
+	def mouseDoubleClickEvent(self, *args, **kwargs):
+		self.update()
+
+	def drawPoints(self, qp):
+		qp.setPen(QPen(Qt.red,10))   ######可以试下画刷 setBrush,10指定点的大小
+
+	def drawLines(self, qp):#######画线
+		pass
+
+
 def main():
 	app = QApplication(sys.argv)
 	ex = ApplicationWindow()
