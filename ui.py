@@ -2,6 +2,8 @@ import sys
 from PyQt5.QtCore import *
 from PyQt5.QtGui import *
 from PyQt5.QtWidgets import *
+import config
+import utils
 
 
 class ApplicationWindow(QMainWindow):
@@ -27,14 +29,37 @@ class ApplicationWindow(QMainWindow):
 		save_image_action.triggered.connect(self.save_image)
 
 
+		#### 绘图界面
+		self.scrollArea = QScrollArea(self)
+		data = utils.read_file("/Users/HZzone/Desktop/test1.py")
+		self.canvas = Canvas(data=data, interval=config.default_interval, parent=self)
+		self.scrollArea.setWidget(self.canvas)
+		self.scrollArea.setWidgetResizable(False)
+		self.scrollArea.widget().resize((len(data)+2)*config.default_interval, config.channels*config.min_channel_size)
+		# self.scrollArea.widget().
+		layout = QGridLayout(self)
+		layout.addWidget(self.scrollArea, 0, 0)
+		w = QWidget()
+		self.slider = QSlider(Qt.Horizontal, w)
+		layout.addWidget(self.slider, 1, 0)
+		self.slider.valueChanged.connect(self.canvas.update_canvas)
+		w.setLayout(layout)
+		self.setCentralWidget(w)
+		self.setMinimumHeight(config.channels*(config.min_channel_size+100))
+
 		'''
 		定义各种操作，显示在第二个通道中的图形
 		'''
 		options = bar.addMenu("Options")
-		differential_action = QAction("Differential", self)
-		differential_action.triggered.connect(self.differential)
+		sin_action = QAction("sin", self)
+		sin_action.triggered.connect(self.canvas.update_canvas)
 
-		options.addAction(differential_action)
+
+		cos_action = QAction("cos", self)
+		cos_action.triggered.connect(self.canvas.update_canvas)
+
+		options.addAction(sin_action)
+		options.addAction(cos_action)
 
 		#### 退出，添加退出快捷键
 		quit_menu = bar.addMenu("Quit")
@@ -46,7 +71,8 @@ class ApplicationWindow(QMainWindow):
 		### 所有菜单栏的槽，输出按的键
 		file.triggered[QAction].connect(self.processtrigger)
 		options.triggered[QAction].connect(self.processtrigger)
-		self.setWindowTitle("Chart system")
+		self.setWindowTitle("Chart System")
+
 
 	def processtrigger(self, q):
 		print(q.text() + " is triggered")
@@ -58,33 +84,91 @@ class ApplicationWindow(QMainWindow):
 	def save_image(self):
 		print("save_image")
 
-	def differential(self):
-		print("differential options")
-
 
 class Canvas(QWidget):
-	def __init__(self, parent=None):
+	def __init__(self, data, interval, parent=None):
 		super(Canvas, self).__init__(parent)
-		self.resize(2000, 200)
-		self.mainlayout = QGridLayout(self)
+		### 要绘制的数据和每个点之间的间隔
+		self.data = data
+		self.interval = interval
+		self.my_sender = None
 
-	def paintEvent(self, e):########画图事件，每次update都会进入，想画啥根据注释进行,双击重画
+		# self.resize((len(data)+1), config.channels*300)
+		self.mainlayout = QGridLayout(self)
+		self.initial = True
+
+	########画图事件，每次update都会进入，需要的是在更换间隔和数据时进行刷新
+	def paintEvent(self, e):
 		qp = QPainter()
 		qp.begin(self)
 
+		if self.my_sender:
+			if isinstance(self.my_sender, QSlider):
+				print("滑动了")
+				print(self.my_sender.value())
+				val = self.my_sender.value()
+				self.interval = config.default_interval+config.default_slider_interval*(val-config.default_slider_value)
+
+		## 第二条线
+		if self.my_sender:
+			if isinstance(self.my_sender, QAction):
+				if self.my_sender.text() == "sin":
+					new_data = utils.sin(self.data)
+				else:
+					new_data = utils.sin(self.data)
+				qp.setPen(QPen(config.second_channel_point_color, config.point_size))  ######可以试下画刷 setBrush,10指定点的大小
+				for index, x in enumerate(new_data):
+					qp.drawPoint((index+1)*self.interval, 2*config.min_channel_size-x)
+				qp.setPen(QPen(config.second_channel_line_color, config.second_channel_line_spacing,
+				               config.second_channel_line_type))  ####前一个random是线条粗线，后一个random是线条类型
+				for index, x in enumerate(new_data):
+					if index == len(new_data) - 1:
+						break
+					qp.drawLine((index + 1) * self.interval, 2*config.min_channel_size - x, (index + 2) * self.interval,
+					            2*config.min_channel_size - new_data[index+1])
+			else:
+				### 选择文件
+				pass
+		print(self.initial)
+		if self.initial:
+			new_data = utils.sin(self.data)
+			qp.setPen(QPen(config.second_channel_point_color, config.point_size))  ######可以试下画刷 setBrush,10指定点的大小
+			for index, x in enumerate(new_data):
+				qp.drawPoint((index+1)*self.interval, 2*config.min_channel_size-x)
+			qp.setPen(QPen(config.second_channel_line_color, config.second_channel_line_spacing,
+						   config.second_channel_line_type))  ####前一个random是线条粗线，后一个random是线条类型
+			for index, x in enumerate(new_data):
+				if index == len(new_data) - 1:
+					break
+				qp.drawLine((index+1) * self.interval, 2*config.min_channel_size-x, (index + 2) * self.interval,
+							2*config.min_channel_size - new_data[index+1])
+			self.initial = False
+
 		self.drawLines(qp)######画线
 		self.drawPoints(qp)  ###画点
+
 		qp.end()
 
-	def mouseDoubleClickEvent(self, *args, **kwargs):
+	def update_canvas(self):
+		# print(QObject.sender())
+		self.my_sender = self.sender()
+		print(self.my_sender)
 		self.update()
 
 	def drawPoints(self, qp):
-		qp.setPen(QPen(Qt.red,10))   ######可以试下画刷 setBrush,10指定点的大小
+		### 绘制第一条曲线，不作任何处理
+		qp.setPen(QPen(config.first_channel_point_color, config.point_size))  ######可以试下画刷 setBrush,10指定点的大小
+		for index, x in enumerate(self.data):
+			qp.drawPoint((index+1)*self.interval, config.min_channel_size-x)
+		self.initial = True
 
 	def drawLines(self, qp):#######画线
-		pass
-
+		qp.setPen(QPen(config.first_channel_line_color, config.first_channel_line_spacing, config.first_channel_line_type))####前一个random是线条粗线，后一个random是线条类型
+		for index, x in enumerate(self.data):
+			if index == len(self.data)-1:
+				break
+			qp.drawLine((index+1)*self.interval, config.min_channel_size-x, (index+2)*self.interval, config.min_channel_size-self.data[index+1])
+		self.initial = True
 
 def main():
 	app = QApplication(sys.argv)
