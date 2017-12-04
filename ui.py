@@ -86,10 +86,10 @@ class ApplicationWindow(QMainWindow):
 		                                                  "选取文件",
 		                                                  "C:/",
 		                                                  "All Files (*);;Text Files (*.txt)")
-		print(fileName, filetype)
-		self.canvas.data = utils.read_file(fileName)
-		self.open_file_signal.connect(self.canvas.update_canvas)
-		self.open_file_signal.emit()
+		if fileName:
+			self.canvas.data = utils.read_file(fileName)
+			self.open_file_signal.connect(self.canvas.update_canvas)
+			self.open_file_signal.emit()
 
 
 	def save_image(self):
@@ -99,15 +99,10 @@ class ApplicationWindow(QMainWindow):
 		path = QFileDialog.getSaveFileName(self, self.tr("Save Image"),
 		                                           "", self.tr("Image files (%1)"))
 		print(path)
-		# if path:
-		# 	im = QPixmap.grabWidget(self.canvas)
-		# 	im.save(path)
 		im = self.canvas.grab()
-		# print(im.size())
-		# print(type(im))
-		# print(im.size()/2)
-		im = im.scaled(im.size()/10)
-		im.save(path[0])
+		if path:
+			im = im.scaled(im.size()/5)
+			im.save(path[0])
 
 
 class Canvas(QWidget):
@@ -126,6 +121,8 @@ class Canvas(QWidget):
 	def paintEvent(self, e):
 		qp = QPainter()
 		qp.begin(self)
+		self.resize((len(self.data)+2)*self.interval, config.channels*config.min_channel_size)
+
 
 		if self.my_sender:
 			if isinstance(self.my_sender, QSlider):
@@ -140,7 +137,7 @@ class Canvas(QWidget):
 				if self.my_sender.text() == "sin":
 					new_data = utils.sin(self.data)
 				else:
-					new_data = utils.sin(self.data)
+					new_data = utils.cos(self.data)
 				qp.setPen(QPen(config.second_channel_point_color, config.point_size))  ######可以试下画刷 setBrush,10指定点的大小
 				for index, x in enumerate(new_data):
 					qp.drawPoint((index+1)*self.interval, 2*config.min_channel_size-x)
@@ -154,20 +151,19 @@ class Canvas(QWidget):
 			else:
 				### 选择文件
 				pass
-		print(self.initial)
-		if self.initial:
-			new_data = utils.sin(self.data)
-			qp.setPen(QPen(config.second_channel_point_color, config.point_size))  ######可以试下画刷 setBrush,10指定点的大小
-			for index, x in enumerate(new_data):
-				qp.drawPoint((index+1)*self.interval, 2*config.min_channel_size-x)
-			qp.setPen(QPen(config.second_channel_line_color, config.second_channel_line_spacing,
-						   config.second_channel_line_type))  ####前一个random是线条粗线，后一个random是线条类型
-			for index, x in enumerate(new_data):
-				if index == len(new_data) - 1:
-					break
-				qp.drawLine((index+1) * self.interval, 2*config.min_channel_size-x, (index + 2) * self.interval,
-							2*config.min_channel_size - new_data[index+1])
-			self.initial = False
+		# if self.initial:
+		# 	new_data = utils.sin(self.data)
+		# 	qp.setPen(QPen(config.second_channel_point_color, config.point_size))  ######可以试下画刷 setBrush,10指定点的大小
+		# 	for index, x in enumerate(new_data):
+		# 		qp.drawPoint((index+1)*self.interval, 2*config.min_channel_size-x)
+		# 	qp.setPen(QPen(config.second_channel_line_color, config.second_channel_line_spacing,
+		# 				   config.second_channel_line_type))  ####前一个random是线条粗线，后一个random是线条类型
+		# 	for index, x in enumerate(new_data):
+		# 		if index == len(new_data) - 1:
+		# 			break
+		# 		qp.drawLine((index+1) * self.interval, 2*config.min_channel_size-x, (index + 2) * self.interval,
+		# 					2*config.min_channel_size - new_data[index+1])
+		# 	self.initial = False
 
 		self.drawLines(qp)######画线
 		self.drawPoints(qp)  ###画点
