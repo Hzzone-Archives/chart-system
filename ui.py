@@ -48,7 +48,7 @@ class ApplicationWindow(QMainWindow):
 		self.slider.valueChanged.connect(self.canvas.update_canvas)
 		w.setLayout(layout)
 		self.setCentralWidget(w)
-		self.setMinimumHeight(config.channels*(config.min_channel_size+100))
+		self.setMinimumHeight(config.channels*(config.min_channel_size+config.window_min_size))
 		self.setMaximumWidth(2*config.min_channel_size)
 
 		'''
@@ -134,14 +134,14 @@ class Canvas(QWidget):
 		qp.drawLine(0, config.min_channel_size,
 		            self.width(), config.min_channel_size)
 		qp.setPen(QPen(Qt.black, 5))  ######可以试下画刷 setBrush,10指定点的大小
-		for index in range(0, config.min_channel_size, 20):
+		for index in range(0, config.min_channel_size, config.coordinate_interval):
 			qp.drawPoint(0, config.min_channel_size-index)
 			qp.setFont(QFont("Decorative", config.font_size))
-			qp.drawText(QRect(10, config.min_channel_size-index, 20, config.min_channel_size-index+config.font_size), Qt.AlignLeft|Qt.AlignTop, str(index))
-		for index in range(0, config.min_channel_size, 20):
+			qp.drawText(QRect(config.y_axes_distance, config.min_channel_size-index, config.coordinate_interval, config.min_channel_size-index+config.font_size), Qt.AlignLeft|Qt.AlignTop, str(index))
+		for index in range(0, config.min_channel_size, config.coordinate_interval):
 			qp.drawPoint(0, 2*config.min_channel_size-index)
 			qp.setFont(QFont("Decorative", config.font_size))
-			qp.drawText(QRect(10, 2*config.min_channel_size-index, 20, 2*config.min_channel_size-index+config.font_size), Qt.AlignLeft|Qt.AlignTop, str(index))
+			qp.drawText(QRect(config.y_axes_distance, 2*config.min_channel_size-index, config.coordinate_interval, 2*config.min_channel_size-index+config.font_size), Qt.AlignLeft|Qt.AlignTop, str(index))
 		for index in range(0, self.width(), int(self.interval)):
 			qp.drawPoint(index, config.min_channel_size)
 			qp.setFont(QFont("Decorative", config.font_size))

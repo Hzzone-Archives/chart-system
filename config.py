@@ -34,3 +34,12 @@ default_slider_interval = 0.3
 
 #### 字体大小
 font_size = 5
+
+#### 最小大小
+window_min_size = 100
+
+#### 坐标间距
+coordinate_interval = 20
+
+### 纵坐标字体离坐标的间隔
+y_axes_distance = 10
