@@ -33,7 +33,8 @@ class ApplicationWindow(QMainWindow):
 
 		#### 绘图界面
 		self.scrollArea = QScrollArea(self)
-		data = utils.read_file("/Users/HZzone/Desktop/test1.py")
+		# data = utils.read_file("/Users/HZzone/Desktop/test1.py")
+		data = []
 		self.canvas = Canvas(data=data, interval=config.default_interval, parent=self)
 		self.scrollArea.setWidget(self.canvas)
 		self.scrollArea.setWidgetResizable(False)
@@ -48,6 +49,7 @@ class ApplicationWindow(QMainWindow):
 		w.setLayout(layout)
 		self.setCentralWidget(w)
 		self.setMinimumHeight(config.channels*(config.min_channel_size+100))
+		self.setMaximumWidth(2*config.min_channel_size)
 
 		'''
 		定义各种操作，显示在第二个通道中的图形
@@ -74,6 +76,7 @@ class ApplicationWindow(QMainWindow):
 		file.triggered[QAction].connect(self.processtrigger)
 		options.triggered[QAction].connect(self.processtrigger)
 		self.setWindowTitle("Chart System")
+
 
 
 	def processtrigger(self, q):
@@ -110,6 +113,8 @@ class Canvas(QWidget):
 		super(Canvas, self).__init__(parent)
 		### 要绘制的数据和每个点之间的间隔
 		self.data = data
+		### 处理后的数据
+		self.new_data = None
 		self.interval = interval
 		self.my_sender = None
 
@@ -123,47 +128,52 @@ class Canvas(QWidget):
 		qp.begin(self)
 		self.resize((len(self.data)+2)*self.interval, config.channels*config.min_channel_size)
 
+		qp.setPen(QPen(config.second_channel_point_color, config.first_channel_line_spacing))  ######可以试下画刷 setBrush,10指定点的大小
+		qp.drawLine(0, 0,
+		            0, config.channels * config.min_channel_size)
+		qp.drawLine(0, config.min_channel_size,
+		            self.width(), config.min_channel_size)
+		qp.setPen(QPen(Qt.black, 5))  ######可以试下画刷 setBrush,10指定点的大小
+		for index in range(0, config.min_channel_size, 20):
+			qp.drawPoint(0, config.min_channel_size-index)
+			qp.setFont(QFont("Decorative", config.font_size))
+			qp.drawText(QRect(10, config.min_channel_size-index, 20, config.min_channel_size-index+config.font_size), Qt.AlignLeft|Qt.AlignTop, str(index))
+		for index in range(0, config.min_channel_size, 20):
+			qp.drawPoint(0, 2*config.min_channel_size-index)
+			qp.setFont(QFont("Decorative", config.font_size))
+			qp.drawText(QRect(10, 2*config.min_channel_size-index, 20, 2*config.min_channel_size-index+config.font_size), Qt.AlignLeft|Qt.AlignTop, str(index))
+		for index in range(0, self.width(), int(self.interval)):
+			qp.drawPoint(index, config.min_channel_size)
+			qp.setFont(QFont("Decorative", config.font_size))
+			qp.drawText(QRect(index, config.min_channel_size-config.font_size, index+config.font_size, config.min_channel_size), Qt.AlignLeft|Qt.AlignTop, str(index))
 
 		if self.my_sender:
 			if isinstance(self.my_sender, QSlider):
 				print("滑动了")
 				print(self.my_sender.value())
 				val = self.my_sender.value()
-				self.interval = config.default_interval+config.default_slider_interval*(val-config.default_slider_value)
+				self.interval = int(config.default_interval+config.default_slider_interval*(val-config.default_slider_value))
 
 		## 第二条线
 		if self.my_sender:
 			if isinstance(self.my_sender, QAction):
 				if self.my_sender.text() == "sin":
-					new_data = utils.sin(self.data)
+					self.new_data = utils.sin(self.data)
 				else:
-					new_data = utils.cos(self.data)
-				qp.setPen(QPen(config.second_channel_point_color, config.point_size))  ######可以试下画刷 setBrush,10指定点的大小
-				for index, x in enumerate(new_data):
-					qp.drawPoint((index+1)*self.interval, 2*config.min_channel_size-x)
-				qp.setPen(QPen(config.second_channel_line_color, config.second_channel_line_spacing,
-				               config.second_channel_line_type))  ####前一个random是线条粗线，后一个random是线条类型
-				for index, x in enumerate(new_data):
-					if index == len(new_data) - 1:
-						break
-					qp.drawLine((index + 1) * self.interval, 2*config.min_channel_size - x, (index + 2) * self.interval,
-					            2*config.min_channel_size - new_data[index+1])
-			else:
-				### 选择文件
-				pass
-		# if self.initial:
-		# 	new_data = utils.sin(self.data)
-		# 	qp.setPen(QPen(config.second_channel_point_color, config.point_size))  ######可以试下画刷 setBrush,10指定点的大小
-		# 	for index, x in enumerate(new_data):
-		# 		qp.drawPoint((index+1)*self.interval, 2*config.min_channel_size-x)
-		# 	qp.setPen(QPen(config.second_channel_line_color, config.second_channel_line_spacing,
-		# 				   config.second_channel_line_type))  ####前一个random是线条粗线，后一个random是线条类型
-		# 	for index, x in enumerate(new_data):
-		# 		if index == len(new_data) - 1:
-		# 			break
-		# 		qp.drawLine((index+1) * self.interval, 2*config.min_channel_size-x, (index + 2) * self.interval,
-		# 					2*config.min_channel_size - new_data[index+1])
-		# 	self.initial = False
+					self.new_data = utils.cos(self.data)
+			# else:
+			# 	new_data = utils.sin(self.data)
+		if self.new_data:
+			qp.setPen(QPen(config.second_channel_point_color, config.point_size))  ######可以试下画刷 setBrush,10指定点的大小
+			for index, x in enumerate(self.new_data):
+				qp.drawPoint((index+1)*self.interval, 2*config.min_channel_size-x)
+			qp.setPen(QPen(config.second_channel_line_color, config.second_channel_line_spacing,
+						   config.second_channel_line_type))  ####前一个random是线条粗线，后一个random是线条类型
+			for index, x in enumerate(self.new_data):
+				if index == len(self.new_data) - 1:
+					break
+				qp.drawLine((index + 1) * self.interval, 2*config.min_channel_size - x, (index + 2) * self.interval,
+							2*config.min_channel_size - self.new_data[index+1])
 
 		self.drawLines(qp)######画线
 		self.drawPoints(qp)  ###画点

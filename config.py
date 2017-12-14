@@ -31,3 +31,6 @@ default_interval = 30
 ### slider默认值
 default_slider_value = 50
 default_slider_interval = 0.3
+
+#### 字体大小
+font_size = 5
